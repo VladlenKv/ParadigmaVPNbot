@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     marzban_default_expire_days: int | None = None
 
     public_site_url: AnyHttpUrl = DEFAULT_URLS["public_site_url"]
+    site_api_base_url: AnyHttpUrl | None = None
+    telegram_auth_secret: SecretStr = Field(default=SecretStr(""))
     support_url: AnyHttpUrl = DEFAULT_URLS["support_url"]
     terms_url: AnyHttpUrl = DEFAULT_URLS["terms_url"]
     privacy_url: AnyHttpUrl = DEFAULT_URLS["privacy_url"]
@@ -61,6 +63,11 @@ class Settings(BaseSettings):
         if value == "":
             return DEFAULT_URLS[info.field_name]
         return value
+
+    @field_validator("site_api_base_url", mode="before")
+    @classmethod
+    def empty_site_api_url_as_none(cls, value: object) -> object:
+        return None if value == "" else value
 
     @field_validator("webhook_path")
     @classmethod

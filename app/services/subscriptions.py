@@ -1,12 +1,14 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.config import Settings
 from app.db.models import Plan, Subscription, SubscriptionStatus, User
 from app.services.provisioning import gb_to_bytes, marzban_username_for
+
+MAX_ADDITIONAL_DEVICES = 6
 
 
 class SubscriptionService:
@@ -29,7 +31,7 @@ class SubscriptionService:
     async def create_trial(self, user: User) -> Subscription | None:
         if not self._settings.trial_enabled or await self.has_trial(user):
             return None
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         subscription = Subscription(
             user_id=user.id,
             plan_id=None,
@@ -52,6 +54,23 @@ class SubscriptionService:
             .limit(1)
         )
         return result.scalar_one_or_none()
+
+    async def add_additional_device(self, subscription: Subscription) -> int | None:
+        result = await self._session.execute(
+            update(Subscription)
+            .where(
+                Subscription.id == subscription.id,
+                Subscription.additional_devices_count < MAX_ADDITIONAL_DEVICES,
+            )
+            .values(
+                additional_devices_count=Subscription.additional_devices_count + 1,
+            )
+            .returning(Subscription.additional_devices_count)
+        )
+        count = result.scalar_one_or_none()
+        if count is not None:
+            subscription.additional_devices_count = count
+        return count
 
     async def has_trial(self, user: User) -> bool:
         result = await self._session.execute(

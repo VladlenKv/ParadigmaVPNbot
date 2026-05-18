@@ -1,7 +1,12 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app.db.models import Plan, Subscription, SubscriptionStatus, User
-from app.integrations.marzban import MarzbanClient, MarzbanError, MarzbanUserPayload
+from app.integrations.marzban import (
+    MarzbanClient,
+    MarzbanError,
+    MarzbanRequestError,
+    MarzbanUserPayload,
+)
 
 
 def marzban_username_for(user: User, subscription_id: int | None = None) -> str:
@@ -21,26 +26,57 @@ class MarzbanProvisioningService:
         self._client = client
 
     async def provision(self, user: User, subscription: Subscription, plan: Plan) -> Subscription:
-        now = datetime.now(timezone.utc)
-        base = subscription.expires_at if subscription.expires_at and subscription.expires_at > now else now
+        now = datetime.now(UTC)
+        base = (
+            subscription.expires_at
+            if subscription.expires_at and subscription.expires_at > now
+            else now
+        )
         starts_at = subscription.starts_at or now
         expires_at = base + timedelta(days=plan.duration_days)
         traffic_limit = gb_to_bytes(plan.traffic_limit_gb)
-        username = subscription.marzban_username or marzban_username_for(user)
+        username = subscription.marzban_username or marzban_username_for(user, subscription.id)
+        fallback_username = marzban_username_for(user, subscription.id)
+        usernames = [username]
+        if not subscription.subscription_url:
+            for candidate in (fallback_username, f"{fallback_username}_sync"):
+                if candidate != username:
+                    usernames.append(candidate)
 
-        payload = MarzbanUserPayload(
-            username=username,
-            expire_at=expires_at,
-            data_limit_bytes=traffic_limit,
-            note=f"Paradigma VPN Telegram user {user.telegram_id}",
-        )
         try:
-            try:
-                await self._client.get_user(username)
-                await self._client.update_user(username, payload)
-            except MarzbanError:
-                await self._client.create_user(payload)
-            link = await self._client.get_subscription_link(username)
+            last_error: MarzbanError | None = None
+            link = ""
+            for candidate_username in usernames:
+                payload = MarzbanUserPayload(
+                    username=candidate_username,
+                    expire_at=expires_at,
+                    data_limit_bytes=traffic_limit,
+                    note=f"Paradigma VPN Telegram user {user.telegram_id}",
+                )
+                try:
+                    try:
+                        await self._client.get_user(candidate_username)
+                    except MarzbanRequestError as exc:
+                        if exc.status_code != 404:
+                            raise
+                        try:
+                            await self._client.create_user(payload)
+                        except MarzbanRequestError as create_exc:
+                            # Marzban can create the user and still answer 500.
+                            # 409 means a retry found it.
+                            if create_exc.status_code not in {409, 500}:
+                                raise
+                            await self._client.get_user(candidate_username)
+                    await self._client.update_user(candidate_username, payload)
+                    link = await self._client.get_subscription_link(candidate_username)
+                    username = candidate_username
+                    break
+                except MarzbanError as exc:
+                    last_error = exc
+            else:
+                if last_error:
+                    raise last_error
+                raise MarzbanError("Marzban provisioning failed")
         except MarzbanError:
             subscription.status = SubscriptionStatus.failed.value
             raise

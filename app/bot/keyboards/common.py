@@ -1,4 +1,4 @@
-﻿from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from app.db.models import Payment, Plan
 
@@ -47,22 +47,41 @@ def back_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def subscription_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="🔄 Обновить статус", callback_data="subscription:show")],
+def subscription_keyboard(
+    has_subscription_url: bool = False,
+    can_add_device: bool = False,
+) -> InlineKeyboardMarkup:
+    rows = [[InlineKeyboardButton(text="🔄 Обновить статус", callback_data="subscription:show")]]
+    if has_subscription_url:
+        if can_add_device:
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text="➕ Добавить устройство",
+                        callback_data="subscription:device:add",
+                    )
+                ]
+            )
+        rows.append([InlineKeyboardButton(text="📲 Инструкции", callback_data="instructions:show")])
+    rows.extend(
+        [
             [InlineKeyboardButton(text="⏳ Продлить", callback_data="plans:list")],
-            [InlineKeyboardButton(text="📲 Инструкции", callback_data="instructions:show")],
             [InlineKeyboardButton(text="Назад", callback_data="menu:main")],
         ]
     )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def admin_menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="📊 Статистика", callback_data="admin:stats")],
-            [InlineKeyboardButton(text="🧾 Ожидают оплаты", callback_data="admin:payments:pending")],
+            [
+                InlineKeyboardButton(
+                    text="🧾 Ожидают оплаты",
+                    callback_data="admin:payments:pending",
+                )
+            ],
             [InlineKeyboardButton(text="Назад", callback_data="menu:main")],
         ]
     )

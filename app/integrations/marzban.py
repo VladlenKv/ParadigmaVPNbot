@@ -1,6 +1,7 @@
-﻿import asyncio
+import asyncio
+import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
@@ -18,7 +19,9 @@ class MarzbanAuthError(MarzbanError):
 
 
 class MarzbanRequestError(MarzbanError):
-    pass
+    def __init__(self, message: str, status_code: int | None = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
 
 
 @dataclass(frozen=True)
@@ -132,7 +135,10 @@ class MarzbanClient:
                 await asyncio.sleep(0.2 * (2**attempt))
                 continue
             if response.is_error:
-                raise MarzbanRequestError(f"Marzban request failed with HTTP {response.status_code}")
+                raise MarzbanRequestError(
+                    f"Marzban request failed with HTTP {response.status_code}",
+                    status_code=response.status_code,
+                )
             if not response.content:
                 return {}
             return response.json()
@@ -144,11 +150,13 @@ class MarzbanClient:
             "username": payload.username,
             "status": payload.status,
             "note": payload.note,
+            "proxies": {"vless": {}},
+            "data_limit_reset_strategy": "no_reset",
         }
         if payload.expire_at:
-            body["expire"] = int(payload.expire_at.astimezone(timezone.utc).timestamp())
+            body["expire"] = int(payload.expire_at.astimezone(UTC).timestamp())
         if payload.data_limit_bytes:
             body["data_limit"] = payload.data_limit_bytes
         if self._settings.marzban_default_proxy_inbounds:
-            body["proxies"] = self._settings.marzban_default_proxy_inbounds
+            body["inbounds"] = json.loads(self._settings.marzban_default_proxy_inbounds)
         return body

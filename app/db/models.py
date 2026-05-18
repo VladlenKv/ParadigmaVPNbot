@@ -1,16 +1,26 @@
-import enum
 from datetime import datetime
 from decimal import Decimal
+from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
 
-class SubscriptionStatus(str, enum.Enum):
+class SubscriptionStatus(StrEnum):
     trial = "trial"
     pending_payment = "pending_payment"
     active = "active"
@@ -20,7 +30,7 @@ class SubscriptionStatus(str, enum.Enum):
     pending_provisioning = "pending_provisioning"
 
 
-class PaymentStatus(str, enum.Enum):
+class PaymentStatus(StrEnum):
     pending = "pending"
     paid = "paid"
     failed = "failed"
@@ -85,6 +95,7 @@ class Subscription(TimestampMixin, Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     traffic_limit_bytes: Mapped[int | None] = mapped_column(BigInteger)
     last_traffic_used_bytes: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    additional_devices_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     user: Mapped[User] = relationship(back_populates="subscriptions")
     plan: Mapped[Plan | None] = relationship(back_populates="subscriptions")
