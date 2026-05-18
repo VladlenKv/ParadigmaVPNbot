@@ -82,7 +82,7 @@ async def get_or_issue_config_for_user(
                 description="",
                 price_amount=0,
                 currency="RUB",
-                duration_days=(subscription.expires_at - datetime.now(UTC)).days if subscription.expires_at else 7,
+                duration_days=max(1, (subscription.expires_at - datetime.now(UTC)).days) if subscription.expires_at else 7,
                 traffic_limit_gb=None,
                 device_limit=1,
             )
