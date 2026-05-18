@@ -23,6 +23,34 @@ TELEGRAM_LOGIN_CONFIRMED = "Вход через Telegram подтвержден.
 TELEGRAM_LOGIN_EXPIRED = "Ссылка входа через Telegram устарела. Откройте сайт и попробуйте еще раз."
 TELEGRAM_LOGIN_FAILED = "Не удалось войти через Telegram. Попробуйте еще раз через несколько минут или напишите в поддержку."
 
+CONFIG_READY = (
+    "Конфигурация готова.\n\n"
+    "Действует до: {expires_at}\n\n"
+    "Ссылка подключения:\n{subscription_url}"
+)
+CONFIG_ISSUE_FAILED = (
+    "Не удалось автоматически выдать конфигурацию. Попробуйте еще раз через несколько минут или напишите в поддержку."
+)
+CONFIG_FREE_DISABLED = (
+    "Автоматическая бесплатная выдача сейчас отключена. Выберите тариф или напишите администратору."
+)
+PROFILE_INFO = (
+    "Профиль Paradigma VPN\n\n"
+    "Telegram ID: {telegram_id}\n"
+    "Username: @{username}\n"
+    "Подписка: {status}\n"
+    "Действует до: {expires_at}\n"
+    "Конфигурация: {config_status}"
+)
+HELP_TEXT = (
+    "Команды бота:\n\n"
+    "/config - получить или показать конфигурацию\n"
+    "/profile - профиль и статус подписки\n"
+    "/subscription - текущая подписка\n"
+    "/help - помощь\n\n"
+    "Поддержка: {support_url}"
+)
+
 PLANS_TITLE = "🚀 Выберите тариф VPN:"
 NO_PLANS = "Сейчас нет активных тарифов. Напишите в поддержку."
 PAYMENT_CREATED = (

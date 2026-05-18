@@ -39,6 +39,15 @@ curl http://localhost:8000/health
 
 Telegram webhook path defaults to `/telegram/webhook`. Set it in Telegram with the secret token from `WEBHOOK_SECRET`.
 
+## Site Sync
+
+Set these variables in the bot `.env` to synchronize Telegram users, issued subscriptions, and config URLs with the site:
+
+- `SITE_API_BASE_URL`: public site API URL, for example `https://95.181.167.201.sslip.io:8888`.
+- `TELEGRAM_AUTH_SECRET`: the same value as in the site API `.env`.
+
+The bot reads DB-backed site settings through `GET /api/internal/bot/settings` and writes issued Marzban configs through `POST /api/internal/bot/subscription-sync`. Users can run `/config` or press “Получить конфигурацию” to receive a temporary free config when free mode is enabled in the site admin panel.
+
 ## Manual Payments MVP
 
 The first provider is `manual`:

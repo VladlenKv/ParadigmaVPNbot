@@ -10,6 +10,7 @@ from app.bot.texts import ru
 from app.config import Settings
 from app.db.models import SubscriptionStatus
 from app.integrations.marzban import MarzbanClient, MarzbanError
+from app.integrations.site_api import SiteApiClient, SiteApiError
 from app.services.marzban_sync import MarzbanSyncService
 from app.services.subscriptions import MAX_ADDITIONAL_DEVICES, SubscriptionService
 from app.services.users import UserService
@@ -106,6 +107,15 @@ async def answer_subscription(
         return
 
     synced = await sync_subscription_from_marzban(subscription, session, settings)
+    if target.from_user:
+        try:
+            await SiteApiClient(settings).sync_subscription(
+                target.from_user,
+                subscription,
+                is_free=subscription.plan_id is None,
+            )
+        except SiteApiError:
+            pass
     text = subscription_text(subscription)
     if not synced:
         text += "\n\nСтатус Marzban сейчас не обновился. Показаны последние данные бота."

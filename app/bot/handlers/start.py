@@ -3,6 +3,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.bot.handlers.config import get_or_issue_config_for_user
 from app.bot.keyboards.common import main_menu
 from app.bot.texts import ru
 from app.config import Settings
@@ -34,6 +35,9 @@ async def start(message: Message, session: AsyncSession, settings: Settings) -> 
             return
         if is_site_login and referral_code:
             await confirm_site_login(message, settings, referral_code.removeprefix("login_"))
+            return
+        if referral_code == "config":
+            await get_or_issue_config_for_user(message.from_user, message.answer, session, settings)
             return
     await message.answer(
         ru.WELCOME,

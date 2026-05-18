@@ -5,6 +5,7 @@ from app.db.models import Payment, Plan
 
 def main_menu(public_site_url: str, is_admin: bool = False) -> InlineKeyboardMarkup:
     rows = [
+        [InlineKeyboardButton(text="Получить конфигурацию", callback_data="config:get")],
         [InlineKeyboardButton(text="🚀 Купить VPN", callback_data="plans:list")],
         [InlineKeyboardButton(text="🎁 Тестовый период", callback_data="trial:create")],
         [InlineKeyboardButton(text="👤 Моя подписка", callback_data="subscription:show")],
@@ -44,6 +45,17 @@ def plan_details_keyboard(plan_id: int) -> InlineKeyboardMarkup:
 def back_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text="Назад", callback_data="menu:main")]]
+    )
+
+
+def config_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Получить конфигурацию", callback_data="config:get")],
+            [InlineKeyboardButton(text="Моя подписка", callback_data="subscription:show")],
+            [InlineKeyboardButton(text="Инструкции", callback_data="instructions:show")],
+            [InlineKeyboardButton(text="Назад", callback_data="menu:main")],
+        ]
     )
 
 

@@ -45,6 +45,41 @@ class SubscriptionService:
         await self._session.flush()
         return subscription
 
+    async def active_for_user(self, user: User) -> Subscription | None:
+        now = datetime.now(UTC)
+        result = await self._session.execute(
+            select(Subscription)
+            .where(
+                Subscription.user_id == user.id,
+                Subscription.status.in_([SubscriptionStatus.trial.value, SubscriptionStatus.active.value]),
+                (Subscription.expires_at.is_(None)) | (Subscription.expires_at > now),
+            )
+            .options(selectinload(Subscription.plan))
+            .order_by(Subscription.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    async def create_free_subscription(
+        self,
+        user: User,
+        duration_days: int,
+        traffic_limit_gb: int | None,
+    ) -> Subscription:
+        now = datetime.now(UTC)
+        subscription = Subscription(
+            user_id=user.id,
+            plan_id=None,
+            status=SubscriptionStatus.trial.value,
+            marzban_username=marzban_username_for(user),
+            starts_at=now,
+            expires_at=now + timedelta(days=duration_days),
+            traffic_limit_bytes=gb_to_bytes(traffic_limit_gb),
+        )
+        self._session.add(subscription)
+        await self._session.flush()
+        return subscription
+
     async def latest_for_user(self, user: User) -> Subscription | None:
         result = await self._session.execute(
             select(Subscription)

@@ -5,7 +5,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.dispatcher.middlewares.base import BaseMiddleware
 from aiogram.types import TelegramObject
 
-from app.bot.handlers import admin, instructions, payments, plans, start, subscriptions, trial
+from app.bot.handlers import admin, config, instructions, payments, plans, start, subscriptions, trial
 from app.config import Settings
 from app.db.session import SessionLocal
 
@@ -46,6 +46,7 @@ def create_dispatcher(settings: Settings) -> Dispatcher:
         payments.router,
         trial.router,
         subscriptions.router,
+        config.router,
         instructions.router,
         admin.router,
     )
