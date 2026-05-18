@@ -69,7 +69,7 @@ class SiteApiClient:
                 "sourceSubscriptionId": str(subscription.id),
                 "configUrl": subscription.subscription_url,
                 "configStatus": "active" if subscription.subscription_url else "failed",
-                "issuedAt": subscription.updated_at.isoformat() if subscription.updated_at else None,
+                "issuedAt": subscription.starts_at.isoformat() if subscription.starts_at else None,
             },
         )
         self._raise_for_response(response)
