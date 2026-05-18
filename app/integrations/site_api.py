@@ -13,6 +13,12 @@ class SiteApiClient:
         self._settings = settings
 
     async def link_telegram(self, token: str, telegram_user: TelegramUser) -> None:
+        await self._post_telegram_user("/api/internal/telegram/link", token, telegram_user)
+
+    async def confirm_telegram_login(self, token: str, telegram_user: TelegramUser) -> None:
+        await self._post_telegram_user("/api/internal/telegram/login", token, telegram_user)
+
+    async def _post_telegram_user(self, path: str, token: str, telegram_user: TelegramUser) -> None:
         if not self._settings.site_api_base_url:
             raise SiteApiError("Site API base URL is not configured")
         secret = self._settings.telegram_auth_secret.get_secret_value()
@@ -24,7 +30,7 @@ class SiteApiClient:
             timeout=httpx.Timeout(15.0),
         ) as client:
             response = await client.post(
-                "/api/internal/telegram/link",
+                path,
                 headers={"x-telegram-auth-secret": secret},
                 json={
                     "token": token,
