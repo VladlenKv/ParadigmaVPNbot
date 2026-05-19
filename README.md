@@ -50,6 +50,15 @@ The bot reads DB-backed site settings through `GET /api/internal/bot/settings` a
 
 ## Manual Payments MVP
 
+## Site Telegram Login
+
+The site login button creates a one-time auth token and opens the bot with `/start auth_<token>`. The bot confirms the token through `POST /api/internal/telegram/auth-confirm`; it does not mark tokens as used. The site frontend polls `GET /api/auth/telegram/status/:tokenId` and calls `POST /api/auth/telegram/complete` after confirmation, which creates the site session cookie.
+
+Required shared settings:
+
+- `SITE_API_BASE_URL`: public site API URL.
+- `TELEGRAM_AUTH_SECRET`: the same value as the site API `.env`.
+
 The first provider is `manual`:
 
 1. User selects a tariff.

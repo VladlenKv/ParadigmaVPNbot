@@ -106,13 +106,14 @@ async def answer_subscription(
             await target.answer(text, reply_markup=back_keyboard())
         return
 
+    is_free_subscription = subscription.plan_id is None
     synced = await sync_subscription_from_marzban(subscription, session, settings)
     if target.from_user:
         try:
             await SiteApiClient(settings).sync_subscription(
                 target.from_user,
                 subscription,
-                is_free=subscription.plan_id is None,
+                is_free=is_free_subscription,
             )
         except SiteApiError:
             pass

@@ -19,6 +19,9 @@ class SiteApiClient:
     async def confirm_telegram_login(self, token: str, telegram_user: TelegramUser) -> None:
         await self._post_telegram_user("/api/internal/telegram/login", token, telegram_user)
 
+    async def confirm_telegram_auth(self, token: str, telegram_user: TelegramUser) -> None:
+        await self._post_telegram_user("/api/internal/telegram/auth-confirm", token, telegram_user)
+
     async def get_bot_settings(self) -> dict:
         response = await self._request("GET", "/api/internal/bot/settings")
         self._raise_for_response(response)
