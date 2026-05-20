@@ -171,7 +171,10 @@ class MarzbanClient:
         return body
 
     def _default_inbounds(self) -> dict[str, list[str]]:
-        raw = self._settings.marzban_default_inbounds or self._settings.marzban_default_proxy_inbounds
+        raw = (
+            self._settings.marzban_default_inbounds
+            or self._settings.marzban_default_proxy_inbounds
+        )
         if not raw:
             raise MarzbanError("MARZBAN_DEFAULT_INBOUNDS is not configured")
 
