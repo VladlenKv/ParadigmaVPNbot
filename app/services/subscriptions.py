@@ -51,7 +51,9 @@ class SubscriptionService:
             select(Subscription)
             .where(
                 Subscription.user_id == user.id,
-                Subscription.status.in_([SubscriptionStatus.trial.value, SubscriptionStatus.active.value]),
+                Subscription.status.in_(
+                    [SubscriptionStatus.trial.value, SubscriptionStatus.active.value],
+                ),
                 (Subscription.expires_at.is_(None)) | (Subscription.expires_at > now),
             )
             .options(selectinload(Subscription.plan))
