@@ -34,7 +34,8 @@ class MarzbanProvisioningService:
         )
         starts_at = subscription.starts_at or now
         expires_at = base + timedelta(days=plan.duration_days)
-        traffic_limit = gb_to_bytes(plan.traffic_limit_gb)
+        marzban_traffic_limit = self._client._settings.marzban_issue_data_limit_bytes
+        stored_traffic_limit = self._client._settings.stored_traffic_limit_bytes
         username = subscription.marzban_username or marzban_username_for(user, subscription.id)
         fallback_username = marzban_username_for(user, subscription.id)
         usernames = [username]
@@ -50,7 +51,7 @@ class MarzbanProvisioningService:
                 payload = MarzbanUserPayload(
                     username=candidate_username,
                     expire_at=expires_at,
-                    data_limit_bytes=traffic_limit,
+                    data_limit_bytes=marzban_traffic_limit,
                     note=f"Paradigma VPN Telegram user {user.telegram_id}",
                 )
                 try:
@@ -86,5 +87,5 @@ class MarzbanProvisioningService:
         subscription.subscription_url = link
         subscription.starts_at = starts_at
         subscription.expires_at = expires_at
-        subscription.traffic_limit_bytes = traffic_limit
+        subscription.traffic_limit_bytes = stored_traffic_limit
         return subscription

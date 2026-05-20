@@ -59,7 +59,8 @@ class MarzbanSyncService:
         subscription.expires_at = (
             _timestamp_to_datetime(user_data.get("expire")) or subscription.expires_at
         )
-        subscription.traffic_limit_bytes = _int_from_user(user_data, "data_limit")
+        data_limit = _int_from_user(user_data, "data_limit")
+        subscription.traffic_limit_bytes = None if data_limit in (None, 0) else data_limit
         subscription.last_traffic_used_bytes = (
             _int_from_user(
                 user_data,

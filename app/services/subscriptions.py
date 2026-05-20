@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.config import Settings
 from app.db.models import Plan, Subscription, SubscriptionStatus, User
-from app.services.provisioning import gb_to_bytes, marzban_username_for
+from app.services.provisioning import marzban_username_for
 
 MAX_ADDITIONAL_DEVICES = 6
 
@@ -22,7 +22,7 @@ class SubscriptionService:
             plan_id=plan.id,
             status=SubscriptionStatus.pending_payment.value,
             marzban_username=marzban_username_for(user),
-            traffic_limit_bytes=gb_to_bytes(plan.traffic_limit_gb),
+            traffic_limit_bytes=self._settings.stored_traffic_limit_bytes,
         )
         self._session.add(subscription)
         await self._session.flush()
@@ -39,7 +39,7 @@ class SubscriptionService:
             marzban_username=marzban_username_for(user),
             starts_at=now,
             expires_at=now + timedelta(days=self._settings.trial_duration_days),
-            traffic_limit_bytes=gb_to_bytes(self._settings.trial_traffic_limit_gb),
+            traffic_limit_bytes=self._settings.stored_traffic_limit_bytes,
         )
         self._session.add(subscription)
         await self._session.flush()
@@ -74,7 +74,7 @@ class SubscriptionService:
             marzban_username=marzban_username_for(user),
             starts_at=now,
             expires_at=now + timedelta(days=duration_days),
-            traffic_limit_bytes=gb_to_bytes(traffic_limit_gb),
+            traffic_limit_bytes=self._settings.stored_traffic_limit_bytes,
         )
         self._session.add(subscription)
         await self._session.flush()

@@ -30,7 +30,10 @@ class Settings(BaseSettings):
     marzban_username: str = ""
     marzban_password: SecretStr = Field(default=SecretStr(""))
     marzban_verify_ssl: bool = True
+    marzban_default_inbounds: str | None = None
     marzban_default_proxy_inbounds: str | None = None
+    marzban_default_data_limit: int | None = 0
+    marzban_default_data_limit_unlimited: bool = True
     marzban_default_data_limit_gb: int | None = None
     marzban_default_expire_days: int | None = None
 
@@ -47,7 +50,7 @@ class Settings(BaseSettings):
 
     trial_enabled: bool = True
     trial_duration_days: int = 3
-    trial_traffic_limit_gb: int = 10
+    trial_traffic_limit_gb: int | None = None
 
     @field_validator(
         "app_base_url",
@@ -77,10 +80,32 @@ class Settings(BaseSettings):
             raise ValueError(msg)
         return value
 
-    @field_validator("marzban_default_data_limit_gb", "marzban_default_expire_days", mode="before")
+    @field_validator(
+        "marzban_default_data_limit",
+        "marzban_default_data_limit_gb",
+        "marzban_default_expire_days",
+        "trial_traffic_limit_gb",
+        mode="before",
+    )
     @classmethod
     def empty_optional_int_as_none(cls, value: object) -> object:
         return None if value == "" else value
+
+    @property
+    def marzban_issue_data_limit_bytes(self) -> int | None:
+        if self.marzban_default_data_limit_unlimited:
+            return 0
+        if self.marzban_default_data_limit is not None:
+            return self.marzban_default_data_limit
+        if self.marzban_default_data_limit_gb is not None:
+            return self.marzban_default_data_limit_gb * 1024 * 1024 * 1024
+        return None
+
+    @property
+    def stored_traffic_limit_bytes(self) -> int | None:
+        if self.marzban_default_data_limit_unlimited:
+            return None
+        return self.marzban_issue_data_limit_bytes
 
     @field_validator("admin_telegram_ids", mode="before")
     @classmethod

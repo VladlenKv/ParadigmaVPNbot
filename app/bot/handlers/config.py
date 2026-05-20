@@ -126,7 +126,11 @@ async def get_or_issue_config_for_user(
             return
 
         duration_days = int(_setting(bot_settings, "freeSubscriptionDurationDays", settings.trial_duration_days))
-        traffic_gb = _setting(bot_settings, "freeSubscriptionTrafficGb", settings.trial_traffic_limit_gb)
+        traffic_gb = None if settings.marzban_default_data_limit_unlimited else _setting(
+            bot_settings,
+            "freeSubscriptionTrafficGb",
+            settings.trial_traffic_limit_gb,
+        )
         subscription = await service.create_free_subscription(user, duration_days, traffic_gb)
         client = MarzbanClient(settings)
         try:

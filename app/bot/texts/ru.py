@@ -66,7 +66,7 @@ TRIAL_ALREADY_USED = (
 TRIAL_CREATED = (
     "🎁 Тестовый период активирован.\n\n"
     "Действует до: {expires_at}\n"
-    "Лимит: {traffic_gb} GB\n\n"
+    "Трафик: {traffic_gb}\n\n"
     "Ссылка подключения:\n{subscription_url}"
 )
 TRIAL_PROVISIONING_FAILED = (
@@ -81,7 +81,7 @@ SUBSCRIPTION_INFO = (
     "Статус: {status}\n"
     "Тариф: {plan_title}\n"
     "Действует до: {expires_at}\n"
-    "Трафик: {used_gb} GB / {limit_gb}\n"
+    "Трафик: {traffic}\n"
     "Доп. устройства: {additional_devices_count}/{max_additional_devices}\n\n"
     "Ссылка подключения:\n{subscription_url}"
 )

@@ -54,12 +54,12 @@ def subscription_markup(subscription: Any):
 
 def subscription_text(subscription: Any) -> str:
     plan_title = subscription.plan.title if subscription.plan else "Тестовый период"
-    limit = (
-        f"{subscription.traffic_limit_bytes / 1024 / 1024 / 1024:.0f} GB"
-        if subscription.traffic_limit_bytes
-        else "без фиксированного лимита"
-    )
     used = subscription.last_traffic_used_bytes / 1024 / 1024 / 1024
+    traffic = (
+        f"{used:.1f} GB / {subscription.traffic_limit_bytes / 1024 / 1024 / 1024:.0f} GB"
+        if subscription.traffic_limit_bytes
+        else "безлимитный"
+    )
     expires = (
         subscription.expires_at.strftime("%d.%m.%Y")
         if subscription.expires_at
@@ -69,8 +69,7 @@ def subscription_text(subscription: Any) -> str:
         status=subscription.status,
         plan_title=plan_title,
         expires_at=expires,
-        used_gb=f"{used:.1f}",
-        limit_gb=limit,
+        traffic=traffic,
         additional_devices_count=subscription.additional_devices_count,
         max_additional_devices=MAX_ADDITIONAL_DEVICES,
         subscription_url=subscription.subscription_url or "ожидает выдачи",

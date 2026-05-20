@@ -29,6 +29,9 @@ Fill `.env` before using the bot:
 - `MARZBAN_BASE_URL`
 - `MARZBAN_USERNAME`
 - `MARZBAN_PASSWORD`
+- `MARZBAN_DEFAULT_INBOUNDS`: comma-separated inbound tags assigned to every issued user, for example `VLESS_TCP_REALITY,VLESS_WS_IOS`.
+- `MARZBAN_DEFAULT_DATA_LIMIT=0`
+- `MARZBAN_DEFAULT_DATA_LIMIT_UNLIMITED=true`
 - public/support/legal URLs
 
 Health endpoint:
@@ -47,6 +50,22 @@ Set these variables in the bot `.env` to synchronize Telegram users, issued subs
 - `TELEGRAM_AUTH_SECRET`: the same value as in the site API `.env`.
 
 The bot reads DB-backed site settings through `GET /api/internal/bot/settings` and writes issued Marzban configs through `POST /api/internal/bot/subscription-sync`. Users can run `/config` or press “Получить конфигурацию” to receive a temporary free config when free mode is enabled in the site admin panel.
+
+## Marzban Issuing
+
+Automatic config issuing uses the Marzban master API. Before creating or updating a user, the bot checks `/api/inbounds` and verifies that every tag from `MARZBAN_DEFAULT_INBOUNDS` exists. If an inbound is missing, provisioning fails and the error is logged instead of creating a user with no inbound selected.
+
+Traffic is unlimited by default:
+
+- `MARZBAN_DEFAULT_DATA_LIMIT_UNLIMITED=true`
+- `MARZBAN_DEFAULT_DATA_LIMIT=0`
+- stored `traffic_limit_bytes` is `NULL`, so the site shows unlimited traffic instead of `10 GB`.
+
+For the current Marzban master, the default inbound list is:
+
+```env
+MARZBAN_DEFAULT_INBOUNDS=VLESS_TCP_REALITY,VLESS_WS_IOS
+```
 
 ## Manual Payments MVP
 

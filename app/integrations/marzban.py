@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -8,6 +9,8 @@ from urllib.parse import urlsplit, urlunsplit
 import httpx
 
 from app.config import Settings
+
+logger = logging.getLogger(__name__)
 
 
 class MarzbanError(RuntimeError):
@@ -42,6 +45,7 @@ class MarzbanClient:
             timeout=httpx.Timeout(15.0),
         )
         self._access_token: str | None = None
+        self._validated_default_inbounds: dict[str, list[str]] | None = None
 
     @staticmethod
     def _normalize_base_url(value: str) -> str:
@@ -75,13 +79,18 @@ class MarzbanClient:
         self._access_token = token
 
     async def create_user(self, payload: MarzbanUserPayload) -> dict[str, Any]:
+        await self._ensure_default_inbounds_exist()
         return await self._request("POST", "/api/user", json=self._user_body(payload))
 
     async def get_user(self, username: str) -> dict[str, Any]:
         return await self._request("GET", f"/api/user/{username}")
 
     async def update_user(self, username: str, payload: MarzbanUserPayload) -> dict[str, Any]:
+        await self._ensure_default_inbounds_exist()
         return await self._request("PUT", f"/api/user/{username}", json=self._user_body(payload))
+
+    async def get_inbounds(self) -> dict[str, list[dict[str, Any]]]:
+        return await self._request("GET", "/api/inbounds")
 
     async def disable_user(self, username: str) -> dict[str, Any]:
         return await self._request("PUT", f"/api/user/{username}", json={"status": "disabled"})
@@ -146,17 +155,61 @@ class MarzbanClient:
         raise MarzbanRequestError("Marzban request retries exhausted")
 
     def _user_body(self, payload: MarzbanUserPayload) -> dict[str, Any]:
+        inbounds = self._default_inbounds()
         body: dict[str, Any] = {
             "username": payload.username,
             "status": payload.status,
             "note": payload.note,
             "proxies": {"vless": {}},
+            "inbounds": inbounds,
             "data_limit_reset_strategy": "no_reset",
         }
         if payload.expire_at:
             body["expire"] = int(payload.expire_at.astimezone(UTC).timestamp())
-        if payload.data_limit_bytes:
+        if payload.data_limit_bytes is not None:
             body["data_limit"] = payload.data_limit_bytes
-        if self._settings.marzban_default_proxy_inbounds:
-            body["inbounds"] = json.loads(self._settings.marzban_default_proxy_inbounds)
         return body
+
+    def _default_inbounds(self) -> dict[str, list[str]]:
+        raw = self._settings.marzban_default_inbounds or self._settings.marzban_default_proxy_inbounds
+        if not raw:
+            raise MarzbanError("MARZBAN_DEFAULT_INBOUNDS is not configured")
+
+        raw = raw.strip()
+        if raw.startswith("{"):
+            parsed = json.loads(raw)
+            if not isinstance(parsed, dict):
+                raise MarzbanError("MARZBAN_DEFAULT_INBOUNDS JSON must be an object")
+            inbounds = {
+                str(protocol): [str(tag) for tag in tags if str(tag).strip()]
+                for protocol, tags in parsed.items()
+                if isinstance(tags, list)
+            }
+        else:
+            tags = [tag.strip() for tag in raw.split(",") if tag.strip()]
+            inbounds = {"vless": tags}
+
+        if not any(inbounds.values()):
+            raise MarzbanError("MARZBAN_DEFAULT_INBOUNDS has no inbound tags")
+        return inbounds
+
+    async def _ensure_default_inbounds_exist(self) -> None:
+        expected = self._default_inbounds()
+        if self._validated_default_inbounds == expected:
+            return
+
+        available = await self.get_inbounds()
+        missing: list[str] = []
+        for protocol, tags in expected.items():
+            available_tags = {
+                str(inbound.get("tag"))
+                for inbound in available.get(protocol, [])
+                if inbound.get("tag")
+            }
+            missing.extend(f"{protocol}:{tag}" for tag in tags if tag not in available_tags)
+
+        if missing:
+            logger.error("Configured Marzban inbounds are missing: %s", ", ".join(missing))
+            raise MarzbanError(f"Configured Marzban inbounds are missing: {', '.join(missing)}")
+
+        self._validated_default_inbounds = expected

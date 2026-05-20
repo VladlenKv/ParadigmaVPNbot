@@ -38,7 +38,7 @@ async def create_trial(call: CallbackQuery, session: AsyncSession, settings: Set
             price_amount=0,
             currency="RUB",
             duration_days=settings.trial_duration_days,
-            traffic_limit_gb=settings.trial_traffic_limit_gb,
+            traffic_limit_gb=None,
             device_limit=1,
         )
         client = MarzbanClient(settings)
@@ -49,7 +49,7 @@ async def create_trial(call: CallbackQuery, session: AsyncSession, settings: Set
                 expires_at=subscription.expires_at.strftime("%d.%m.%Y")
                 if subscription.expires_at
                 else "",
-                traffic_gb=settings.trial_traffic_limit_gb,
+                traffic_gb="безлимитный",
                 subscription_url=subscription.subscription_url or "РѕР¶РёРґР°РµС‚ РІС‹РґР°С‡Рё",
             )
             reply_markup = subscription_keyboard(
