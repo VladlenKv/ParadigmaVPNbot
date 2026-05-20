@@ -60,6 +60,16 @@ async def get_or_issue_config_for_user(
     service = SubscriptionService(session, settings)
     subscription = await service.active_for_user(user)
 
+    if subscription:
+        client = MarzbanClient(settings)
+        try:
+            await MarzbanSyncService(client).sync_subscription(subscription)
+            await session.commit()
+        except MarzbanError:
+            await session.rollback()
+        finally:
+            await client.aclose()
+
     if subscription and subscription.subscription_url:
         await session.commit()
         await _sync_to_site(settings, telegram_user, subscription, is_free=subscription.plan_id is None, event_type="config.show_existing")
