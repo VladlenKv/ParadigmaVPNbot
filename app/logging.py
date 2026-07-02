@@ -3,7 +3,7 @@ import sys
 
 from pythonjsonlogger import jsonlogger
 
-SENSITIVE_KEYS = ("token", "password", "secret", "subscription")
+SENSITIVE_KEYS = ("token", "password", "secret")
 
 
 class RedactingFilter(logging.Filter):

@@ -12,6 +12,15 @@ class SiteApiError(RuntimeError):
 class SiteApiClient:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
+        self._client: httpx.AsyncClient | None = None
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            self._client = httpx.AsyncClient(
+                base_url=str(self._settings.site_api_base_url).rstrip("/"),
+                timeout=httpx.Timeout(15.0),
+            )
+        return self._client
 
     async def link_telegram(self, token: str, telegram_user: TelegramUser) -> None:
         await self._post_telegram_user("/api/internal/telegram/link", token, telegram_user)
@@ -57,6 +66,7 @@ class SiteApiClient:
             "/api/internal/bot/subscription-sync",
             json={
                 "telegramId": telegram_user.id,
+                "botUserId": subscription.user_id,
                 "telegramUsername": telegram_user.username,
                 "firstName": telegram_user.first_name,
                 "lastName": telegram_user.last_name,
@@ -103,19 +113,20 @@ class SiteApiClient:
         if not secret:
             raise SiteApiError("Telegram auth secret is not configured")
 
-        async with httpx.AsyncClient(
-            base_url=str(self._settings.site_api_base_url).rstrip("/"),
-            timeout=httpx.Timeout(15.0),
-        ) as client:
-            headers = kwargs.pop("headers", {})
-            response = await client.request(
-                method,
-                path,
-                headers={"x-telegram-auth-secret": secret, **headers},
-                **kwargs,
-            )
-
+        client = await self._get_client()
+        headers = kwargs.pop("headers", {})
+        response = await client.request(
+            method,
+            path,
+            headers={"x-telegram-auth-secret": secret, **headers},
+            **kwargs,
+        )
         return response
+
+    async def close(self) -> None:
+        if self._client:
+            await self._client.aclose()
+            self._client = None
 
     def _raise_for_response(self, response: httpx.Response) -> None:
         if response.is_error:

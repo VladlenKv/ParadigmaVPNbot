@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import Bot
 
 
@@ -6,5 +8,7 @@ class NotificationService:
         self._bot = bot
 
     async def notify_admins(self, admin_ids: set[int], text: str) -> None:
-        for admin_id in admin_ids:
-            await self._bot.send_message(admin_id, text)
+        await asyncio.gather(
+            *(self._bot.send_message(admin_id, text) for admin_id in admin_ids),
+            return_exceptions=True,
+        )

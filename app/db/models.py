@@ -49,6 +49,7 @@ class TimestampMixin:
 
 class User(TimestampMixin, Base):
     __tablename__ = "users"
+    __table_args__ = {"schema": "bot"}
 
     id: Mapped[int] = mapped_column(primary_key=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True, nullable=False)
@@ -66,6 +67,7 @@ class User(TimestampMixin, Base):
 
 class Plan(TimestampMixin, Base):
     __tablename__ = "plans"
+    __table_args__ = {"schema": "bot"}
 
     id: Mapped[int] = mapped_column(primary_key=True)
     code: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
@@ -84,10 +86,11 @@ class Plan(TimestampMixin, Base):
 
 class Subscription(TimestampMixin, Base):
     __tablename__ = "subscriptions"
+    __table_args__ = {"schema": "bot"}
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
-    plan_id: Mapped[int | None] = mapped_column(ForeignKey("plans.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("bot.users.id"), index=True, nullable=False)
+    plan_id: Mapped[int | None] = mapped_column(ForeignKey("bot.plans.id"))
     status: Mapped[SubscriptionStatus] = mapped_column(String(32), nullable=False)
     marzban_username: Mapped[str] = mapped_column(String(128), index=True, nullable=False)
     subscription_url: Mapped[str | None] = mapped_column(Text)
@@ -104,10 +107,11 @@ class Subscription(TimestampMixin, Base):
 
 class Payment(TimestampMixin, Base):
     __tablename__ = "payments"
+    __table_args__ = {"schema": "bot"}
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
-    subscription_id: Mapped[int | None] = mapped_column(ForeignKey("subscriptions.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("bot.users.id"), index=True, nullable=False)
+    subscription_id: Mapped[int | None] = mapped_column(ForeignKey("bot.subscriptions.id"), index=True)
     provider: Mapped[str] = mapped_column(String(32), nullable=False)
     provider_payment_id: Mapped[str | None] = mapped_column(String(128), unique=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
@@ -121,9 +125,10 @@ class Payment(TimestampMixin, Base):
 
 class BotEvent(Base):
     __tablename__ = "bot_events"
+    __table_args__ = {"schema": "bot"}
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("bot.users.id"), index=True)
     event_type: Mapped[str] = mapped_column(String(128), index=True, nullable=False)
     payload_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -133,6 +138,7 @@ class BotEvent(Base):
 
 class Setting(Base):
     __tablename__ = "settings"
+    __table_args__ = {"schema": "bot"}
 
     key: Mapped[str] = mapped_column(String(128), primary_key=True)
     value_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
