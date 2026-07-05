@@ -126,6 +126,25 @@ def upgrade() -> None:
     op.create_index("ix_bot_subscriptions_expires_at", "subscriptions", ["expires_at"], schema="bot")
     op.create_index("ix_bot_subscriptions_marzban_username", "subscriptions", ["marzban_username"], schema="bot")
 
+    # Copy data from public.subscriptions
+    conn = op.get_bind()
+    if conn.dialect.has_table(conn, "subscriptions", schema=None):
+        result = conn.execute(
+            sa.text("SELECT EXISTS (SELECT 1 FROM information_schema.columns "
+                     "WHERE table_name = 'subscriptions' AND table_schema = 'public')")
+        )
+        if result.scalar():
+            conn.execute(
+                sa.text("INSERT INTO bot.subscriptions (id, user_id, plan_id, status, marzban_username, "
+                        "subscription_url, starts_at, expires_at, traffic_limit_bytes, "
+                        "last_traffic_used_bytes, additional_devices_count, created_at, updated_at) "
+                        "SELECT id, user_id, plan_id, status, marzban_username, "
+                        "subscription_url, starts_at, expires_at, traffic_limit_bytes, "
+                        "last_traffic_used_bytes, additional_devices_count, created_at, updated_at "
+                        "FROM public.subscriptions "
+                        "ON CONFLICT DO NOTHING")
+            )
+
     # ── Create bot.payments ───────────────────────────────────────────
     op.create_table(
         "payments",
@@ -145,6 +164,24 @@ def upgrade() -> None:
     op.create_index("ix_bot_payments_user_id", "payments", ["user_id"], schema="bot")
     op.create_index("ix_bot_payments_subscription_id", "payments", ["subscription_id"], schema="bot")
 
+    # Copy data from public.payments
+    if conn.dialect.has_table(conn, "payments", schema=None):
+        result = conn.execute(
+            sa.text("SELECT EXISTS (SELECT 1 FROM information_schema.columns "
+                     "WHERE table_name = 'payments' AND table_schema = 'public')")
+        )
+        if result.scalar():
+            conn.execute(
+                sa.text("INSERT INTO bot.payments (id, user_id, subscription_id, provider, "
+                        "provider_payment_id, amount, currency, status, payload_json, "
+                        "created_at, updated_at) "
+                        "SELECT id, user_id, subscription_id, provider, "
+                        "provider_payment_id, amount, currency, status, payload_json, "
+                        "created_at, updated_at "
+                        "FROM public.payments "
+                        "ON CONFLICT DO NOTHING")
+            )
+
     # ── Create bot.bot_events ─────────────────────────────────────────
     op.create_table(
         "bot_events",
@@ -158,6 +195,20 @@ def upgrade() -> None:
     op.create_index("ix_bot_bot_events_user_id", "bot_events", ["user_id"], schema="bot")
     op.create_index("ix_bot_bot_events_event_type", "bot_events", ["event_type"], schema="bot")
 
+    # Copy data from public.bot_events
+    if conn.dialect.has_table(conn, "bot_events", schema=None):
+        result = conn.execute(
+            sa.text("SELECT EXISTS (SELECT 1 FROM information_schema.columns "
+                     "WHERE table_name = 'bot_events' AND table_schema = 'public')")
+        )
+        if result.scalar():
+            conn.execute(
+                sa.text("INSERT INTO bot.bot_events (id, user_id, event_type, payload_json, created_at) "
+                        "SELECT id, user_id, event_type, payload_json, created_at "
+                        "FROM public.bot_events "
+                        "ON CONFLICT DO NOTHING")
+            )
+
     # ── Create bot.settings ───────────────────────────────────────────
     op.create_table(
         "settings",
@@ -166,6 +217,20 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         schema="bot",
     )
+
+    # Copy data from public.settings
+    if conn.dialect.has_table(conn, "settings", schema=None):
+        result = conn.execute(
+            sa.text("SELECT EXISTS (SELECT 1 FROM information_schema.columns "
+                     "WHERE table_name = 'settings' AND table_schema = 'public')")
+        )
+        if result.scalar():
+            conn.execute(
+                sa.text("INSERT INTO bot.settings (key, value_json, updated_at) "
+                        "SELECT key, value_json, updated_at "
+                        "FROM public.settings "
+                        "ON CONFLICT DO NOTHING")
+            )
 
 
 def downgrade() -> None:
